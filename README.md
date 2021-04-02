@@ -17,6 +17,7 @@ npm install --save v-tooltip
 ```javascript
 import Vue from 'vue'
 import Dropdown from 'vue-2-dropdown'
+import 'vue-2-dropdown/dist/vue-2-dropdown.css';
 
 Vue.use(Dropdown)
 ```

@@ -25,6 +25,7 @@ Vue.use(Dropdown)
 ## Local Registration
 ```javascript
 import { VDropdown } from 'vue-2-dropdown'
+import 'vue-2-dropdown/dist/vue-2-dropdown.css';
 
 export default {
   components: {

@@ -1,11 +1,11 @@
 {
   "name": "vue-2-dropdown",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "build-package": "vue-cli-service build --target lib --name vue-2-dropdown ./src/lib/index.js"
   },
   "dependencies": {
     "@juggle/resize-observer": "^3.3.0",
@@ -26,5 +26,25 @@
     "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
     "vue-template-compiler": "^2.6.11"
-  }
+  },
+  "main": "dist/vue-2-dropdown.common.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/17axah/vue-2-dropdown.git"
+  },
+  "files": [
+    "dist/*",
+    "nuxt/*",
+    "src/lib/*",
+    "src/components/*",
+    "*.json"
+  ],
+  "keywords": [
+    "tooltip",
+    "dropdown",
+    "vue dropdown",
+    "vue tooltip"
+  ],
+  "author": "Rustam",
+  "license": "MIT"
 }

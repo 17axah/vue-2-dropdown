@@ -10,7 +10,7 @@ The plugin provides a VDropdown component which is very easy to use.
 
 ## Install
 ```
-npm install --save v-tooltip
+npm install --save vue-2-dropdown
 ```
 
 ## Global Registration

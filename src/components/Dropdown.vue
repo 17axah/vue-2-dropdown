@@ -10,29 +10,27 @@
     </div>
 
     <client-only>
-      <mounting-portal
+      <component
+        :is="mountSelf ? fade_transition : 'mounting-portal'"
         :transition="fade_transition"
         :mount-to="mountTo"
         append
-        :disabled="mountSelf"
       >
-        <component :is="fade_transition">
-          <div
-            v-if="local_shown && !disabled"
-            ref="portal"
-            class="ui-dropdown-portal"
-            :class="portal_classes"
-            :style="portal_styles"
-            v-on="portal_listeners"
-          >
-            <div class="ui-dropdown-portal__layout">
-              <slot name="portal" v-bind="{ hide }" />
+        <div
+          v-if="local_shown && !disabled"
+          ref="portal"
+          class="ui-dropdown-portal"
+          :class="portal_classes"
+          :style="portal_styles"
+          v-on="portal_listeners"
+        >
+          <div class="ui-dropdown-portal__layout">
+            <slot name="portal" v-bind="{ hide }" />
 
-              <div v-if="arrow" class="ui-dropdown-portal__arrow" />
-            </div>
+            <div v-if="arrow" class="ui-dropdown-portal__arrow" />
           </div>
-        </component>
-      </mounting-portal>
+        </div>
+      </component>
     </client-only>
   </div>
 </template>

@@ -693,33 +693,24 @@ export default {
         this.resize_observers.viewport.disconnect();
       }
     },
-    observeCoords() {
+    onShow() {
       this.observeDocumentClick();
       this.observeDocumentCoords();
       this.observePortalCoords();
       this.observeTriggerCoords();
       this.observeViewportElCoords();
+
+      this.$emit('show');
     },
-    unobserveCoords() {
+    onHide() {
       this.unobserveDocumentClick();
       this.unobserveDocumentCoords();
       this.unobservePortalCoords();
       this.unobserveTriggerCoords();
       this.unobserveViewportElCoords();
-    },
-    onShow() {
-      this.observeCoords();
-
-      this.$emit('show');
-    },
-    onHide() {
-      this.unobserveCoords();
 
       this.$emit('hide');
     },
-  },
-  destroyed() {
-    this.unobserveCoords();
   },
 };
 </script>

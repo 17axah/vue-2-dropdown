@@ -10,21 +10,28 @@
     </div>
 
     <client-only>
-      <mounting-portal :transition="fade_transition" :mount-to="mountTo" append>
-        <div
-          v-if="local_shown && !disabled"
-          ref="portal"
-          class="ui-dropdown-portal"
-          :class="portal_classes"
-          :style="portal_styles"
-          v-on="portal_listeners"
-        >
-          <div class="ui-dropdown-portal__layout">
-            <slot name="portal" v-bind="{ hide }" />
+      <mounting-portal
+        :transition="fade_transition"
+        :mount-to="mountTo"
+        append
+        :disabled="mountSelf"
+      >
+        <component :is="fade_transition">
+          <div
+            v-if="local_shown && !disabled"
+            ref="portal"
+            class="ui-dropdown-portal"
+            :class="portal_classes"
+            :style="portal_styles"
+            v-on="portal_listeners"
+          >
+            <div class="ui-dropdown-portal__layout">
+              <slot name="portal" v-bind="{ hide }" />
 
-            <div v-if="arrow" class="ui-dropdown-portal__arrow" />
+              <div v-if="arrow" class="ui-dropdown-portal__arrow" />
+            </div>
           </div>
-        </div>
+        </component>
       </mounting-portal>
     </client-only>
   </div>
@@ -74,8 +81,12 @@ export default {
       },
     },
     relativeEl: {
-      type: [Boolean, global.Element],
-      default: false,
+      type: [String, global.Element],
+      default: '',
+    },
+    viewportEl: {
+      type: [String, global.Element],
+      default: '',
     },
     documentTargets: {
       type: Array,
@@ -133,6 +144,10 @@ export default {
       type: String,
       default: 'body',
     },
+    mountSelf: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -142,12 +157,16 @@ export default {
       resize_observers: {
         portal: null,
         trigger: null,
+        viewport: null,
       },
       coords: {
         document: {
           width: 0,
           height: 0,
           scrollTop: 0,
+          scrollRight: 0,
+          scrollBottom: 0,
+          scrollLeft: 0,
         },
         portal: {
           width: 0,
@@ -156,8 +175,18 @@ export default {
         trigger: {
           width: 0,
           height: 0,
-          left: 0,
           top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
+        viewport: {
+          height: 0,
+          width: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
         },
       },
     };
@@ -201,7 +230,7 @@ export default {
 
       return (fallback || placement).split('-')[1];
     },
-    portal_position_styles_top() {
+    portal_position_coords_top() {
       const { trigger, portal } = this.coords;
       const { scrollTop, scrollLeft } = this.coords.document;
 
@@ -210,25 +239,25 @@ export default {
         left: trigger.left + scrollLeft,
       };
     },
-    portal_position_styles_right() {
+    portal_position_coords_right() {
       const { trigger } = this.coords;
       const { scrollTop, scrollLeft } = this.coords.document;
 
       return {
         top: trigger.top + scrollTop,
-        left: trigger.left + trigger.width + scrollLeft,
+        left: trigger.right + scrollLeft,
       };
     },
-    portal_position_styles_bottom() {
+    portal_position_coords_bottom() {
       const { trigger } = this.coords;
       const { scrollTop, scrollLeft } = this.coords.document;
 
       return {
-        top: trigger.top + trigger.height + scrollTop,
+        top: trigger.bottom + scrollTop,
         left: trigger.left + scrollLeft,
       };
     },
-    portal_position_styles_left() {
+    portal_position_coords_left() {
       const { trigger, portal } = this.coords;
       const { scrollTop, scrollLeft } = this.coords.document;
 
@@ -236,6 +265,42 @@ export default {
         top: trigger.top + scrollTop,
         left: trigger.left - portal.width + scrollLeft,
       };
+    },
+    portal_position_styles_top() {
+      if (this.mountSelf) {
+        return {
+          top: -this.coords.portal.height,
+          left: 0,
+        };
+      }
+      return this.portal_position_coords_top;
+    },
+    portal_position_styles_right() {
+      if (this.mountSelf) {
+        return {
+          top: 0,
+          left: this.coords.trigger.width,
+        };
+      }
+      return this.portal_position_coords_right;
+    },
+    portal_position_styles_bottom() {
+      if (this.mountSelf) {
+        return {
+          top: this.coords.trigger.height,
+          left: 0,
+        };
+      }
+      return this.portal_position_coords_bottom;
+    },
+    portal_position_styles_left() {
+      if (this.mountSelf) {
+        return {
+          top: 0,
+          left: -this.coords.portal.width,
+        };
+      }
+      return this.portal_position_coords_left;
     },
     portal_alignment_styles_x_start() {
       return { left: 0, top: 0 };
@@ -290,26 +355,34 @@ export default {
       };
     },
     portal_in_viewport_top() {
-      const { top } = this.portal_position_styles_top;
+      const { top } = this.portal_position_coords_top;
       const { scrollTop } = this.coords.document;
 
-      return top >= scrollTop + this.viewportOffset[0];
+      return top >= scrollTop + this.coords.viewport.top + this.viewportOffset[0];
     },
     portal_in_viewport_right() {
-      const { left } = this.portal_position_styles_right;
-      const documentWidth = this.coords.document.width - this.viewportOffset[1];
+      const { document, viewport, portal } = this.coords;
+      const { left } = this.portal_position_coords_right;
+      const { scrollRight } = document;
+      const right = left + portal.width;
+      const viewportRight = viewport.right ? document.width - viewport.right : 0;
 
-      return left + this.coords.portal.width <= documentWidth;
+      return right <= scrollRight - viewportRight - this.viewportOffset[1];
     },
     portal_in_viewport_bottom() {
-      const { top } = this.portal_position_styles_bottom;
-      const { height, scrollTop } = this.coords.document;
-      const { portal } = this.coords;
+      const { document, viewport, portal } = this.coords;
+      const { top } = this.portal_position_coords_bottom;
+      const { scrollBottom } = document;
+      const bottom = top + portal.height;
+      const viewportBottom = viewport.bottom ? document.height - viewport.bottom : 0;
 
-      return top + portal.height <= scrollTop + height - this.viewportOffset[2];
+      return bottom <= scrollBottom - viewportBottom - this.viewportOffset[2];
     },
     portal_in_viewport_left() {
-      return this.portal_position_styles_left.left >= this.viewportOffset[3];
+      const { left } = this.portal_position_coords_left;
+      const { scrollLeft } = this.coords.document;
+
+      return left >= scrollLeft + this.coords.viewport.left + this.viewportOffset[3];
     },
     in_viewport() {
       return this[`portal_in_viewport_${this.position}`];
@@ -387,6 +460,7 @@ export default {
       return {
         'ui-dropdown--shown': this.local_shown,
         'ui-dropdown--disabled': this.disabled,
+        'ui-dropdown--self': this.mountSelf,
       };
     },
     trigger_listeners_hover() {
@@ -427,6 +501,16 @@ export default {
     },
   },
   methods: {
+    getViewportEl() {
+      return typeof this.viewportEl === 'string' && this.viewportEl
+        ? this.$el.closest(this.viewportEl)
+        : this.viewportEl;
+    },
+    getRelativeEl() {
+      return typeof this.relativeEl === 'string' && this.relativeEl
+        ? this.$el.closest(this.relativeEl)
+        : this.relativeEl;
+    },
     toggle() {
       if (!this.disabled) {
         this.local_shown = !this.local_shown;
@@ -490,11 +574,16 @@ export default {
       }
     },
     onDocumentChangeCoords() {
+      const { clientWidth, clientHeight } = document.documentElement;
+      const { pageYOffset, pageXOffset } = window;
+
       this.coords.document = {
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-        scrollTop: window.pageYOffset,
-        scrollLeft: window.pageXOffset,
+        width: clientWidth,
+        height: clientHeight,
+        scrollTop: pageYOffset,
+        scrollRight: pageXOffset + clientWidth,
+        scrollLeft: pageXOffset,
+        scrollBottom: pageYOffset + clientHeight,
       };
     },
     onPortalChangeCoords() {
@@ -506,18 +595,37 @@ export default {
       }
     },
     onTriggerChangeCoords() {
-      const relativeEl = this.relativeEl || this.$refs.trigger;
+      const relativeEl = this.getRelativeEl() || this.$refs.trigger;
 
       if (relativeEl) {
-        const trigger = relativeEl;
         const {
-          left, top, width, height,
-        } = trigger.getBoundingClientRect();
+          top, right, bottom, left, width, height,
+        } = relativeEl.getBoundingClientRect();
 
         this.coords.trigger = {
-          width, height, left, top,
+          width,
+          height,
+          top,
+          right,
+          bottom,
+          left,
         };
       }
+    },
+    onViewportElChangeCoords() {
+      const viewportParent = this.getViewportEl();
+      const {
+        top, right, bottom, left, width, height,
+      } = viewportParent.getBoundingClientRect();
+
+      this.coords.viewport = {
+        width,
+        height,
+        top,
+        right,
+        bottom,
+        left,
+      };
     },
     observeDocumentClick() {
       if (this.autoHide) {
@@ -567,22 +675,51 @@ export default {
     unobserveTriggerCoords() {
       this.resize_observers.trigger.disconnect();
     },
-    onShow() {
+    observeViewportElCoords() {
+      const viewportParent = this.getViewportEl();
+
+      if (this.viewportEl && viewportParent) {
+        this.resize_observers.viewport = new ResizeObserver(
+          this.onViewportElChangeCoords,
+        );
+
+        this.resize_observers.viewport.observe(viewportParent);
+      }
+    },
+    unobserveViewportElCoords() {
+      const viewportParent = this.getViewportEl();
+
+      if (this.viewportEl && viewportParent) {
+        this.resize_observers.viewport.disconnect();
+      }
+    },
+    observeCoords() {
       this.observeDocumentClick();
       this.observeDocumentCoords();
       this.observePortalCoords();
       this.observeTriggerCoords();
-
-      this.$emit('show');
+      this.observeViewportElCoords();
     },
-    onHide() {
+    unobserveCoords() {
       this.unobserveDocumentClick();
       this.unobserveDocumentCoords();
       this.unobservePortalCoords();
       this.unobserveTriggerCoords();
+      this.unobserveViewportElCoords();
+    },
+    onShow() {
+      this.observeCoords();
+
+      this.$emit('show');
+    },
+    onHide() {
+      this.unobserveCoords();
 
       this.$emit('hide');
     },
+  },
+  destroyed() {
+    this.unobserveCoords();
   },
 };
 </script>
@@ -597,6 +734,9 @@ export default {
   opacity: 0
 
 .ui-dropdown
+  &--self
+    position: relative
+
   &__trigger
     cursor: pointer
 

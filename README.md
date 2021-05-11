@@ -54,7 +54,8 @@ shown               | boolean             | false
 arrow               | boolean             | true                  
 placement           | string              | 'bottom-center'       
 trigger             | string              | 'click'               
-relativeEl          | boolean,HTMLElement | false                 
+relativeEl          | string,HTMLElement  | ''                    
+viewportEl          | string,HTMLElement  | ''                    
 documentTargets     | array               | ['portal', 'trigger'] 
 offset              | array               | [0, 0, 0, 0]          
 viewportOffset      | array               | [0, 0, 0, 0]          
@@ -69,6 +70,7 @@ zIndex              | string,number       | 50
 transition          | string              | 'fade'                
 transitionMode      | string              | 'in-out'              
 mountTo             | string              | 'body'                
+mountSelf           | boolean             | false                 
 
 ### shown
 The parameter is responsible for displaying the pop-up. It can be useful when more complex logic for displaying a popup is needed. **Supports sync modifier**. In this case, you will most likely have to configure the following options: *trigger*, *documentTargets*
@@ -108,6 +110,24 @@ HTMLElement relative to which the popup will be positioned.
   <div>
     <div ref="relativeEl">relative el</div>
     <v-dropdown :relative-el="$refs.relativeEl">
+      <div>trigger</div>
+
+      <template #portal>
+        <div>content</div>
+      </template>
+    </v-dropdown>
+  </div>
+</template>
+```
+
+## viewportEl
+The element from which to read the viewport. Best used with **mountSelf** parameter
+
+``` html
+<template>
+  <div ref="viewportEl" style="overflow: scroll;">
+    <div>relative el</div>
+    <v-dropdown mount-self :viewport-el="$refs.viewportEl">
       <div>trigger</div>
 
       <template #portal>
@@ -171,3 +191,6 @@ transition-mode
 
 ## mountTo
 Element selector to which the portal will be inserted.
+
+## mountSelf
+Prevents the creation of a portal.

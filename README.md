@@ -71,6 +71,7 @@ transition          | string              | 'fade'
 transitionMode      | string              | 'in-out'              
 mountTo             | string              | 'body'                
 mountSelf           | boolean             | false                 
+autoAlignment       | boolean             | false
 
 ### shown
 The parameter is responsible for displaying the pop-up. It can be useful when more complex logic for displaying a popup is needed. **Supports sync modifier**. In this case, you will most likely have to configure the following options: *trigger*, *documentTargets*
@@ -103,14 +104,19 @@ The first word before the hyphen specifies the position relative to the trigger,
 Trigger at which the pop-up will open. Possible values: *'click', 'hover', ''*. An empty string is indicated if you do not need triggers and want to do the logic yourself using the **shown** parameter
 
 ## relativeEl
-HTMLElement relative to which the popup will be positioned.
+It is recommended to use strings (css selector) as an option, since $ refs is not reactive. However, document.querySelector might well work.
+If css selector is passed - the element will be searched inside the component (this.$el.querySelector).
 
 ``` html
 <template>
   <div>
-    <div ref="relativeEl">relative el</div>
-    <v-dropdown :relative-el="$refs.relativeEl">
-      <div>trigger</div>
+    <v-dropdown relative-el="[data-dropdown-relative]">
+      <div>
+        <div>
+          trigger
+        </div>
+        <i data-dropdown-relative>icon</i>
+      </div>
 
       <template #portal>
         <div>content</div>
@@ -121,13 +127,17 @@ HTMLElement relative to which the popup will be positioned.
 ```
 
 ## viewportEl
-The element from which to read the viewport. Best used with **mountSelf** parameter
+The element from which to read the viewport. Best used with **mountSelf** parameter.
+
+It is recommended to use strings (css selector) as an option, since $ refs is not reactive. However, document.querySelector might well work.
+
+If passed in css the selector will look for the closest parent (this.$el.closest)
 
 ``` html
 <template>
-  <div ref="viewportEl" style="overflow: scroll;">
+  <div data-dropdown-viewport style="overflow: scroll;">
     <div>relative el</div>
-    <v-dropdown mount-self :viewport-el="$refs.viewportEl">
+    <v-dropdown mount-self viewport-el="[data-dropdown-viewport]">
       <div>trigger</div>
 
       <template #portal>
@@ -194,3 +204,6 @@ Element selector to which the portal will be inserted.
 
 ## mountSelf
 Prevents the creation of a portal.
+
+## autoAlignment
+If enabled, it will apply automatic alignment depending on whether the popup is visible or not.

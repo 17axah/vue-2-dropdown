@@ -71,6 +71,10 @@ export default {
           : placements.includes(placement);
       },
     },
+    autoAlignment: {
+      type: Boolean,
+      default: false,
+    },
     trigger: {
       type: String,
       default: 'click',
@@ -389,7 +393,10 @@ export default {
       return this.in_viewport ? this.position : this.fallback_position;
     },
     computed_alignment() {
-      return this.in_viewport ? this.alignment : this.fallback_alignment;
+      const alignment = this.in_viewport ? this.alignment : this.fallback_alignment;
+      const autoAlignment = this.autoAlignment ? this.getAutoAlignment() : false;
+
+      return autoAlignment || alignment;
     },
     computed_offset() {
       return this.in_viewport
@@ -499,6 +506,25 @@ export default {
     },
   },
   methods: {
+    getAutoAlignment() {
+      const position = this.computed_position;
+      const positionY = position === 'bottom' || position === 'top';
+      const positionX = position === 'left' || position === 'right';
+      const notFitTop = !this.portal_in_viewport_top;
+      const notFitRight = !this.portal_in_viewport_right;
+      const notFitBottom = !this.portal_in_viewport_bottom;
+      const notFitLeft = !this.portal_in_viewport_left;
+
+      if ((positionY && notFitLeft) || (positionX && notFitTop)) {
+        return 'start';
+      }
+
+      if ((positionY && notFitRight) || (positionX && notFitBottom)) {
+        return 'end';
+      }
+
+      return null;
+    },
     getViewportEl() {
       return typeof this.viewportEl === 'string' && this.viewportEl
         ? this.$el.closest(this.viewportEl)
@@ -506,7 +532,7 @@ export default {
     },
     getRelativeEl() {
       return typeof this.relativeEl === 'string' && this.relativeEl
-        ? this.$el.closest(this.relativeEl)
+        ? this.$el.querySelector(this.relativeEl)
         : this.relativeEl;
     },
     toggle() {

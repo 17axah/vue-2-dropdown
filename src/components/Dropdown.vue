@@ -357,104 +357,112 @@ export default {
       };
     },
     portal_in_viewport_top() {
-      const { top } = this.portal_position_coords_top;
-      const { scrollTop } = this.coords.document;
-
-      return top >= scrollTop + this.coords.viewport.top + this.viewportOffset[0];
+      return this.checkInViewport(this.portal_position_coords_top.top, 'top');
     },
     portal_in_viewport_right() {
-      const { document, viewport, portal } = this.coords;
       const { left } = this.portal_position_coords_right;
-      const { scrollRight } = document;
-      const right = left + portal.width;
-      const viewportRight = viewport.right ? document.width - viewport.right : 0;
+      const right = left + this.coords.portal.width;
 
-      return right <= scrollRight - viewportRight - this.viewportOffset[1];
+      return this.checkInViewport(right, 'right');
     },
     portal_in_viewport_bottom() {
-      const { document, viewport, portal } = this.coords;
       const { top } = this.portal_position_coords_bottom;
-      const { scrollBottom } = document;
-      const bottom = top + portal.height;
-      const viewportBottom = viewport.bottom ? document.height - viewport.bottom : 0;
+      const bottom = top + this.coords.portal.height;
 
-      return bottom <= scrollBottom - viewportBottom - this.viewportOffset[2];
+      return this.checkInViewport(bottom, 'bottom');
     },
     portal_in_viewport_left() {
-      const { left } = this.portal_position_coords_left;
-      const { scrollLeft } = this.coords.document;
-
-      return left >= scrollLeft + this.coords.viewport.left + this.viewportOffset[3];
+      return this.checkInViewport(this.portal_position_coords_left.left, 'left');
     },
     in_viewport() {
       return this[`portal_in_viewport_${this.position}`];
     },
-    computed_position() {
+    portal_position() {
       return this.in_viewport ? this.position : this.fallback_position;
     },
-    computed_alignment() {
-      const alignment = this.in_viewport ? this.alignment : this.fallback_alignment;
-      const autoAlignment = this.autoAlignment ? this.getAutoAlignment() : false;
-
-      return autoAlignment || alignment;
+    portal_alignment() {
+      return this.in_viewport ? this.alignment : this.fallback_alignment;
     },
-    computed_offset() {
+    portal_offset() {
       return this.in_viewport
         ? [this.offset[0], this.offset[1]]
         : [this.offset[2] || 0, this.offset[3] || 0];
     },
     portal_offset_styles_top() {
       return {
-        left: this.computed_offset[0],
-        top: -this.computed_offset[1],
+        left: this.portal_offset[0],
+        top: -this.portal_offset[1],
       };
     },
     portal_offset_styles_right() {
       return {
-        left: this.computed_offset[0],
-        top: this.computed_offset[1],
+        left: this.portal_offset[0],
+        top: this.portal_offset[1],
       };
     },
     portal_offset_styles_bottom() {
       return {
-        left: this.computed_offset[0],
-        top: this.computed_offset[1],
+        left: this.portal_offset[0],
+        top: this.portal_offset[1],
       };
     },
     portal_offset_styles_left() {
       return {
-        left: -this.computed_offset[0],
-        top: this.computed_offset[1],
+        left: -this.portal_offset[0],
+        top: this.portal_offset[1],
       };
     },
-    portal_styles() {
-      const axises = {
-        top: 'y',
-        bottom: 'y',
-        left: 'x',
-        right: 'x',
-      };
-
-      const axis = axises[this.computed_position];
-      const position = this[`portal_position_styles_${this.computed_position}`];
-      const alignment = this[
-        `portal_alignment_styles_${axis}_${this.computed_alignment}`
-      ];
-      const offset = this[`portal_offset_styles_${this.computed_position}`];
+    portal_coords() {
+      const position = this[`portal_position_styles_${this.portal_position}`];
+      const offset = this[`portal_offset_styles_${this.portal_position}`];
 
       return {
-        top: `${position.top + alignment.top + offset.top}px`,
-        left: `${position.left + alignment.left + offset.left}px`,
-        width: alignment.width ? `${alignment.width}px` : undefined,
-        height: alignment.height ? `${alignment.height}px` : undefined,
+        top: position.top + offset.top,
+        left: position.left + offset.left,
+      };
+    },
+    portal_computed_alignment() {
+      if (this.autoAlignment) {
+        const alignmentCoords = this.getPortalAlignmentCoords(this.portal_alignment);
+        const left = this.portal_coords.left + alignmentCoords.left;
+        const top = this.portal_coords.top + alignmentCoords.top;
+        const { portal } = this.coords;
+        const position = this.portal_position;
+        const positionY = position === 'bottom' || position === 'top';
+        const positionX = position === 'left' || position === 'right';
+        const notFitTop = !this.checkInViewport(top, 'top');
+        const notFitRight = !this.checkInViewport(left + portal.width, 'right');
+        const notFitBottom = !this.checkInViewport(top + portal.height, 'bottom');
+        const notFitLeft = !this.checkInViewport(left, 'left');
+
+        if ((positionY && notFitLeft) || (positionX && notFitTop)) {
+          return 'start';
+        }
+
+        if ((positionY && notFitRight) || (positionX && notFitBottom)) {
+          return 'end';
+        }
+      }
+
+      return this.portal_alignment;
+    },
+    portal_styles() {
+      const alignmentCoords = this.getPortalAlignmentCoords(this.portal_computed_alignment);
+      const portalCoords = this.portal_coords;
+
+      return {
+        top: `${portalCoords.top + alignmentCoords.top}px`,
+        left: `${portalCoords.left + alignmentCoords.left}px`,
+        width: alignmentCoords.width ? `${alignmentCoords.width}px` : undefined,
+        height: alignmentCoords.height ? `${alignmentCoords.height}px` : undefined,
         zIndex: this.zIndex,
       };
     },
     portal_classes() {
       return [
         this.portalClass,
-        `ui-dropdown-portal--${this.computed_position}`,
-        `ui-dropdown-portal--${this.computed_alignment}`,
+        `ui-dropdown-portal--${this.portal_position}`,
+        `ui-dropdown-portal--${this.portal_computed_alignment}`,
         {
           'ui-dropdown-portal--arrow': this.arrow,
           'ui-dropdown-portal--no-padding': this.noPadding,
@@ -506,24 +514,44 @@ export default {
     },
   },
   methods: {
-    getAutoAlignment() {
-      const position = this.computed_position;
-      const positionY = position === 'bottom' || position === 'top';
-      const positionX = position === 'left' || position === 'right';
-      const notFitTop = !this.portal_in_viewport_top;
-      const notFitRight = !this.portal_in_viewport_right;
-      const notFitBottom = !this.portal_in_viewport_bottom;
-      const notFitLeft = !this.portal_in_viewport_left;
+    checkInViewport(coords, direction) {
+      const { document, viewport } = this.coords;
+      const [offsetTop, offsetRight, offsetBottom, offsetLeft] = this.viewportOffset;
+      const {
+        scrollTop, scrollRight, scrollBottom, scrollLeft,
+      } = document;
 
-      if ((positionY && notFitLeft) || (positionX && notFitTop)) {
-        return 'start';
+      const viewportRight = viewport.right ? document.width - viewport.right : 0;
+      const viewportBottom = viewport.bottom ? document.height - viewport.bottom : 0;
+
+      switch (direction) {
+        case 'top':
+          return coords >= scrollTop + viewport.top + offsetTop;
+
+        case 'right':
+          return coords <= scrollRight - viewportRight - offsetRight;
+
+        case 'bottom':
+          return coords <= scrollBottom - viewportBottom - offsetBottom;
+
+        case 'left':
+          return coords >= scrollLeft + viewport.left + offsetLeft;
+
+        default:
+          throw new Error('direction required');
       }
+    },
+    getPortalAlignmentCoords(type) {
+      const axises = {
+        top: 'y',
+        bottom: 'y',
+        left: 'x',
+        right: 'x',
+      };
 
-      if ((positionY && notFitRight) || (positionX && notFitBottom)) {
-        return 'end';
-      }
+      const axis = axises[this.portal_position];
 
-      return null;
+      return this[`portal_alignment_styles_${axis}_${type}`];
     },
     getViewportEl() {
       return typeof this.viewportEl === 'string' && this.viewportEl

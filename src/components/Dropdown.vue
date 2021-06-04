@@ -71,10 +71,6 @@ export default {
           : placements.includes(placement);
       },
     },
-    autoAlignment: {
-      type: Boolean,
-      default: false,
-    },
     trigger: {
       type: String,
       default: 'click',
@@ -147,6 +143,10 @@ export default {
       default: 'body',
     },
     mountSelf: {
+      type: Boolean,
+      default: false,
+    },
+    autoAlignment: {
       type: Boolean,
       default: false,
     },
@@ -232,237 +232,57 @@ export default {
 
       return (fallback || placement).split('-')[1];
     },
-    portal_position_coords_top() {
-      const { trigger, portal } = this.coords;
-      const { scrollTop, scrollLeft } = this.coords.document;
-
-      return {
-        top: trigger.top - portal.height + scrollTop,
-        left: trigger.left + scrollLeft,
-      };
+    offsets() {
+      return [this.offset[0], this.offset[1]];
     },
-    portal_position_coords_right() {
-      const { trigger } = this.coords;
-      const { scrollTop, scrollLeft } = this.coords.document;
-
-      return {
-        top: trigger.top + scrollTop,
-        left: trigger.right + scrollLeft,
-      };
-    },
-    portal_position_coords_bottom() {
-      const { trigger } = this.coords;
-      const { scrollTop, scrollLeft } = this.coords.document;
-
-      return {
-        top: trigger.bottom + scrollTop,
-        left: trigger.left + scrollLeft,
-      };
-    },
-    portal_position_coords_left() {
-      const { trigger, portal } = this.coords;
-      const { scrollTop, scrollLeft } = this.coords.document;
-
-      return {
-        top: trigger.top + scrollTop,
-        left: trigger.left - portal.width + scrollLeft,
-      };
-    },
-    portal_position_styles_top() {
-      if (this.mountSelf) {
-        return {
-          top: -this.coords.portal.height,
-          left: 0,
-        };
-      }
-      return this.portal_position_coords_top;
-    },
-    portal_position_styles_right() {
-      if (this.mountSelf) {
-        return {
-          top: 0,
-          left: this.coords.trigger.width,
-        };
-      }
-      return this.portal_position_coords_right;
-    },
-    portal_position_styles_bottom() {
-      if (this.mountSelf) {
-        return {
-          top: this.coords.trigger.height,
-          left: 0,
-        };
-      }
-      return this.portal_position_coords_bottom;
-    },
-    portal_position_styles_left() {
-      if (this.mountSelf) {
-        return {
-          top: 0,
-          left: -this.coords.portal.width,
-        };
-      }
-      return this.portal_position_coords_left;
-    },
-    portal_alignment_styles_x_start() {
-      return { left: 0, top: 0 };
-    },
-    portal_alignment_styles_x_center() {
-      const { trigger, portal } = this.coords;
-
-      return {
-        left: 0,
-        top: trigger.height / 2 - portal.height / 2,
-      };
-    },
-    portal_alignment_styles_x_end() {
-      const { trigger, portal } = this.coords;
-
-      return {
-        left: 0,
-        top: trigger.height - portal.height,
-      };
-    },
-    portal_alignment_styles_x_stretch() {
-      return {
-        left: 0,
-        top: 0,
-        height: this.coords.trigger.height,
-      };
-    },
-    portal_alignment_styles_y_start() {
-      return { left: 0, top: 0 };
-    },
-    portal_alignment_styles_y_center() {
-      const { trigger, portal } = this.coords;
-
-      return {
-        left: trigger.width / 2 - portal.width / 2,
-        top: 0,
-      };
-    },
-    portal_alignment_styles_y_end() {
-      const { trigger, portal } = this.coords;
-
-      return {
-        left: trigger.width - portal.width,
-        top: 0,
-      };
-    },
-    portal_alignment_styles_y_stretch() {
-      return {
-        left: 0,
-        top: 0,
-        width: this.coords.trigger.width,
-      };
-    },
-    portal_in_viewport_top() {
-      return this.checkInViewport(this.portal_position_coords_top.top, 'top');
-    },
-    portal_in_viewport_right() {
-      const { left } = this.portal_position_coords_right;
-      const right = left + this.coords.portal.width;
-
-      return this.checkInViewport(right, 'right');
-    },
-    portal_in_viewport_bottom() {
-      const { top } = this.portal_position_coords_bottom;
-      const bottom = top + this.coords.portal.height;
-
-      return this.checkInViewport(bottom, 'bottom');
-    },
-    portal_in_viewport_left() {
-      return this.checkInViewport(this.portal_position_coords_left.left, 'left');
-    },
-    in_viewport() {
-      return this[`portal_in_viewport_${this.position}`];
-    },
-    portal_position() {
-      return this.in_viewport ? this.position : this.fallback_position;
-    },
-    portal_alignment() {
-      return this.in_viewport ? this.alignment : this.fallback_alignment;
-    },
-    portal_offset() {
-      return this.in_viewport
-        ? [this.offset[0], this.offset[1]]
-        : [this.offset[2] || 0, this.offset[3] || 0];
-    },
-    portal_offset_styles_top() {
-      return {
-        left: this.portal_offset[0],
-        top: -this.portal_offset[1],
-      };
-    },
-    portal_offset_styles_right() {
-      return {
-        left: this.portal_offset[0],
-        top: this.portal_offset[1],
-      };
-    },
-    portal_offset_styles_bottom() {
-      return {
-        left: this.portal_offset[0],
-        top: this.portal_offset[1],
-      };
-    },
-    portal_offset_styles_left() {
-      return {
-        left: -this.portal_offset[0],
-        top: this.portal_offset[1],
-      };
+    fallback_offsets() {
+      return [this.offset[2] || 0, this.offset[3] || 0];
     },
     portal_coords() {
-      const position = this[`portal_position_styles_${this.portal_position}`];
-      const offset = this[`portal_offset_styles_${this.portal_position}`];
-
-      return {
-        top: position.top + offset.top,
-        left: position.left + offset.left,
-      };
+      return this.calculatePortalCoords(this.position, this.alignment, this.offsets);
     },
-    portal_computed_alignment() {
+    portal_in_viewport() {
+      return this.checkInViewport(this.portal_coords[this.position], this.position, this.mountSelf);
+    },
+    computed_position() {
+      return this.portal_in_viewport ? this.position : this.fallback_position;
+    },
+    computed_alignment() {
       if (this.autoAlignment) {
-        const alignmentCoords = this.getPortalAlignmentCoords(this.portal_alignment);
-        const left = this.portal_coords.left + alignmentCoords.left;
-        const top = this.portal_coords.top + alignmentCoords.top;
-        const { portal } = this.coords;
-        const position = this.portal_position;
-        const positionY = position === 'bottom' || position === 'top';
-        const positionX = position === 'left' || position === 'right';
-        const notFitTop = !this.checkInViewport(top, 'top');
-        const notFitRight = !this.checkInViewport(left + portal.width, 'right');
-        const notFitBottom = !this.checkInViewport(top + portal.height, 'bottom');
-        const notFitLeft = !this.checkInViewport(left, 'left');
-
-        if ((positionY && notFitLeft) || (positionX && notFitTop)) {
-          return 'start';
-        }
-
-        if ((positionY && notFitRight) || (positionX && notFitBottom)) {
-          return 'end';
-        }
+        return this.getAutoAlignment(
+          this.portal_coords,
+          this.computed_position,
+          this.portal_in_viewport ? this.alignment : this.fallback_alignment,
+          this.mountSelf,
+        );
       }
 
-      return this.portal_alignment;
+      return this.portal_in_viewport ? this.alignment : this.fallback_alignment;
+    },
+    computed_offsets() {
+      return this.portal_in_viewport ? this.offsets : this.fallback_offsets;
     },
     portal_styles() {
-      const alignmentCoords = this.getPortalAlignmentCoords(this.portal_computed_alignment);
-      const portalCoords = this.portal_coords;
+      const coords = this.calculatePortalCoords(
+        this.computed_position,
+        this.computed_alignment,
+        this.computed_offsets,
+        this.mountSelf,
+      );
 
       return {
-        top: `${portalCoords.top + alignmentCoords.top}px`,
-        left: `${portalCoords.left + alignmentCoords.left}px`,
-        width: alignmentCoords.width ? `${alignmentCoords.width}px` : undefined,
-        height: alignmentCoords.height ? `${alignmentCoords.height}px` : undefined,
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+        width: coords.width ? `${coords.width}px` : undefined,
+        height: coords.height ? `${coords.height}px` : undefined,
         zIndex: this.zIndex,
       };
     },
     portal_classes() {
       return [
         this.portalClass,
-        `ui-dropdown-portal--${this.portal_position}`,
-        `ui-dropdown-portal--${this.portal_computed_alignment}`,
+        `ui-dropdown-portal--${this.computed_position}`,
+        `ui-dropdown-portal--${this.computed_alignment}`,
         {
           'ui-dropdown-portal--arrow': this.arrow,
           'ui-dropdown-portal--no-padding': this.noPadding,
@@ -514,34 +334,7 @@ export default {
     },
   },
   methods: {
-    checkInViewport(coords, direction) {
-      const { document, viewport } = this.coords;
-      const [offsetTop, offsetRight, offsetBottom, offsetLeft] = this.viewportOffset;
-      const {
-        scrollTop, scrollRight, scrollBottom, scrollLeft,
-      } = document;
-
-      const viewportRight = viewport.right ? document.width - viewport.right : 0;
-      const viewportBottom = viewport.bottom ? document.height - viewport.bottom : 0;
-
-      switch (direction) {
-        case 'top':
-          return coords >= scrollTop + viewport.top + offsetTop;
-
-        case 'right':
-          return coords <= scrollRight - viewportRight - offsetRight;
-
-        case 'bottom':
-          return coords <= scrollBottom - viewportBottom - offsetBottom;
-
-        case 'left':
-          return coords >= scrollLeft + viewport.left + offsetLeft;
-
-        default:
-          throw new Error('direction required');
-      }
-    },
-    getPortalAlignmentCoords(type) {
+    getPositionAxis(position) {
       const axises = {
         top: 'y',
         bottom: 'y',
@@ -549,9 +342,252 @@ export default {
         right: 'x',
       };
 
-      const axis = axises[this.portal_position];
+      return axises[position];
+    },
+    getPortalPositionCoords(position) {
+      const { trigger, portal } = this.coords;
+      const { scrollTop, scrollLeft } = this.coords.document;
 
-      return this[`portal_alignment_styles_${axis}_${type}`];
+      switch (position) {
+        case 'top':
+          return {
+            top: trigger.top - portal.height + scrollTop,
+            left: trigger.left + scrollLeft,
+          };
+
+        case 'right':
+          return {
+            top: trigger.top + scrollTop,
+            left: trigger.right + scrollLeft,
+          };
+
+        case 'bottom':
+          return {
+            top: trigger.bottom + scrollTop,
+            left: trigger.left + scrollLeft,
+          };
+
+        case 'left':
+          return {
+            top: trigger.top + scrollTop,
+            left: trigger.left - portal.width + scrollLeft,
+          };
+
+        default:
+          throw new Error('position required');
+      }
+    },
+    getPortalSelfPositionCoords(position) {
+      switch (position) {
+        case 'top':
+          return {
+            top: -this.coords.portal.height,
+            left: 0,
+          };
+
+        case 'right':
+          return {
+            top: 0,
+            left: this.coords.trigger.width,
+          };
+
+        case 'bottom':
+          return {
+            top: this.coords.trigger.height,
+            left: 0,
+          };
+
+        case 'left':
+          return {
+            top: 0,
+            left: -this.coords.portal.width,
+          };
+
+        default:
+          throw new Error('position required');
+      }
+    },
+    getPortalAlignmentCoords(position, alignment) {
+      const { trigger, portal } = this.coords;
+
+      const axis = this.getPositionAxis(position);
+
+      if (axis === 'x') {
+        switch (alignment) {
+          case 'start':
+            return { left: 0, top: 0 };
+
+          case 'center':
+            return {
+              left: 0,
+              top: trigger.height / 2 - portal.height / 2,
+            };
+
+          case 'end':
+            return {
+              left: 0,
+              top: trigger.height - portal.height,
+            };
+
+          case 'stretch':
+            return {
+              left: 0,
+              top: 0,
+              height: this.coords.trigger.height,
+            };
+
+          default:
+            throw new Error('alignment required');
+        }
+      } else if (axis === 'y') {
+        switch (alignment) {
+          case 'start':
+            return { left: 0, top: 0 };
+
+          case 'center':
+            return {
+              left: trigger.width / 2 - portal.width / 2,
+              top: 0,
+            };
+
+          case 'end':
+            return {
+              left: trigger.width - portal.width,
+              top: 0,
+            };
+
+          case 'stretch':
+            return {
+              left: 0,
+              top: 0,
+              width: this.coords.trigger.width,
+            };
+
+          default:
+            throw new Error('alignment required');
+        }
+      } else {
+        throw new Error('axis required');
+      }
+    },
+    getPortalOffsetCoords(position, offsets) {
+      switch (position) {
+        case 'top':
+          return {
+            left: offsets[0],
+            top: -offsets[1],
+          };
+
+        case 'right':
+          return {
+            left: offsets[0],
+            top: offsets[1],
+          };
+
+        case 'bottom':
+          return {
+            left: offsets[0],
+            top: offsets[1],
+          };
+
+        case 'left':
+          return {
+            left: -offsets[0],
+            top: offsets[1],
+          };
+
+        default:
+          throw new Error('position required');
+      }
+    },
+    calculatePortalCoords(position, alignment, offsets, self) {
+      const positionCoords = self
+        ? this.getPortalSelfPositionCoords(position)
+        : this.getPortalPositionCoords(position);
+
+      const alignmentCoords = this.getPortalAlignmentCoords(position, alignment);
+      const offsetCoords = this.getPortalOffsetCoords(position, offsets);
+      const top = positionCoords.top + alignmentCoords.top + offsetCoords.top;
+      const left = positionCoords.left + alignmentCoords.left + offsetCoords.left;
+
+      return {
+        top,
+        right: left + this.coords.portal.width,
+        bottom: top + this.coords.portal.height,
+        left,
+        width: alignmentCoords.width || undefined,
+        height: alignmentCoords.height || undefined,
+      };
+    },
+    checkInViewport(coords, position, self) {
+      const { document, viewport } = this.coords;
+      const [offsetTop, offsetRight, offsetBottom, offsetLeft] = this.viewportOffset;
+      const {
+        scrollTop, scrollRight, scrollBottom, scrollLeft,
+      } = document;
+
+      if (self) {
+        switch (position) {
+          case 'top':
+            return coords >= scrollTop + viewport.top + offsetTop;
+
+          case 'right':
+            return coords <= scrollRight - (document.width - viewport.right) - offsetRight;
+
+          case 'bottom':
+            return coords <= scrollBottom - (document.height - viewport.bottom) - offsetBottom;
+
+          case 'left':
+            return coords >= scrollLeft + viewport.left + offsetLeft;
+
+          default:
+            throw new Error('position required');
+        }
+      } else {
+        switch (position) {
+          case 'top':
+            return coords >= scrollTop + offsetTop;
+
+          case 'right':
+            return coords <= scrollRight - offsetRight;
+
+          case 'bottom':
+            return coords <= scrollBottom - offsetBottom;
+
+          case 'left':
+            return coords >= scrollLeft + offsetLeft;
+
+          default:
+            throw new Error('position required');
+        }
+      }
+    },
+    getAutoAlignment(rect, position, alignment, self) {
+      const { trigger } = this.coords;
+      const { scrollTop, scrollLeft } = this.coords.document;
+      const axis = this.getPositionAxis(position);
+
+      if (axis === 'x') {
+        if (scrollTop + trigger.top > rect.top && !this.checkInViewport(rect.top, 'top', self)) {
+          return 'start';
+        }
+
+        if (scrollTop + trigger.bottom < rect.bottom && !this.checkInViewport(rect.bottom, 'bottom', self)) {
+          return 'end';
+        }
+      }
+
+      if (axis === 'y') {
+        if (scrollLeft + trigger.left > rect.left && !this.checkInViewport(rect.left, 'left', self)) {
+          return 'start';
+        }
+
+        if (scrollLeft + trigger.right < rect.right && !this.checkInViewport(rect.right, 'right', self)) {
+          return 'end';
+        }
+      }
+
+      return alignment;
     },
     getViewportEl() {
       return typeof this.viewportEl === 'string' && this.viewportEl
@@ -690,11 +726,17 @@ export default {
       }
     },
     observeDocumentCoords() {
+      const viewportParent = this.getViewportEl();
+
       window.addEventListener('resize', this.onDocumentChangeCoords);
       window.addEventListener('scroll', this.onDocumentChangeCoords);
 
       window.addEventListener('scroll', this.onTriggerChangeCoords, true);
       window.addEventListener('scroll', this.onPortalChangeCoords, true);
+
+      if (this.viewportEl && viewportParent) {
+        window.addEventListener('scroll', this.onViewportElChangeCoords, true);
+      }
 
       this.onDocumentChangeCoords();
     },
@@ -704,6 +746,10 @@ export default {
 
       window.removeEventListener('scroll', this.onTriggerChangeCoords, true);
       window.removeEventListener('scroll', this.onPortalChangeCoords, true);
+
+      if (this.viewportEl) {
+        window.removeEventListener('scroll', this.onViewportElChangeCoords, true);
+      }
     },
     observePortalCoords() {
       this.resize_observers.portal = new ResizeObserver(
